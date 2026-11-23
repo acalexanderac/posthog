@@ -73,6 +73,11 @@ If this PR only adds an unused nullable column, new table, or dual-write/shadow 
 - Start from the trigger files in your scope, and follow the persisted state, keys, or contracts they touch into any other changed file in the PR file list (and its direct callers, models, or readers) — report findings on whichever changed file carries the defect.
 - Check whether a backfill, fallback, version gate, or phased rollout note is already present in the PR before flagging a gap.
 - Stay lean: inspect only the changed files, their direct callers/models/schemas, and at most the nearest `AGENTS.md` to a trigger file when it states deployment or migration rules. Do not sweep unrelated guides or directories.
+- Work in batches. Before each step, decide every lookup you still need, then send all of them together as parallel tool calls in one message. Do not send a single lookup when you can already name another one you will need.
+- Aim to finish the investigation in at most four steps, then answer.
+- Ask for line ranges and search results, not whole files.
+- The diff above already shows the changed lines of the files in your scope. Do not fetch those files or their diff again; read only the surrounding lines you still need.
+- Keep every lookup small: at most about 150 lines of output. Narrow a search with a path and a precise pattern, and read a line range instead of a whole file or a whole diff.
 
 ## What to leave to other perspectives
 
