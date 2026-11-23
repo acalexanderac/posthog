@@ -1,0 +1,461 @@
+{
+    "defects": [
+        {
+            "pr": 134867,
+            "fix_pr": 136056,
+            "title": "feat(cohorts): turn realtime on and off per cohort",
+            "merged_at": "2026-11-16",
+            "head_sha": "e5b2105ff82c451a74962a07c7e26607e616791b",
+            "base_sha": "6d6cf49dafc4fb2e6161bc1a211d93d65b4454e1",
+            "category": "unbackfilled_legacy_rows",
+            "split": "tune",
+            "changed_files": 77,
+            "additions": 1821,
+            "deletions": 175,
+            "issues": [
+                {
+                    "id": "134867-R1",
+                    "claim": "Existing behavioral cohorts saved before condition_type existed remain NULL with no backfill; once realtime evaluation trusts the column/readiness stamp on deploy, those existing cohorts evaluate dynamically and match nobody until manually resaved."
+                }
+            ]
+        },
+        {
+            "pr": 135345,
+            "fix_pr": 137370,
+            "title": "feat(code-review): move review and auto-approval names to code_review",
+            "merged_at": "2026-11-17",
+            "head_sha": "af02c598b4f4da45ac3b39be8177dd9ec86bc41a",
+            "base_sha": "7c0ee5708dc4f77ceca449ebf0f20635691273e0",
+            "category": "deploy_migration_hazard",
+            "split": "tune",
+            "changed_files": 115,
+            "additions": 12510,
+            "deletions": 11920,
+            "issues": [
+                {
+                    "id": "135345-R1",
+                    "claim": "posthog/migrations/1440_rename_code_review_scopes.py runs in the deploy hook and rewrites millions of rows on large OAuth tables (posthog_oauthapplication / oauth2_provider_accesstoken) with GIN indexes on scope, blocking production deploys."
+                }
+            ]
+        },
+        {
+            "pr": 134208,
+            "fix_pr": 135120,
+            "title": "feat(clickhouse): drop the legacy metrics1 and metrics2 tables from the logs cluster",
+            "merged_at": "2026-11-13",
+            "head_sha": "9405e3ec97b48bae57e9095995abb97d05bb8ba2",
+            "base_sha": "6257a4ab7614dbeff65ccf3972b8d7b12c024df5",
+            "category": "deploy_migration_hazard",
+            "split": "tune",
+            "changed_files": 15,
+            "additions": 71,
+            "deletions": 3929,
+            "issues": [
+                {
+                    "id": "134208-R1",
+                    "claim": "posthog/clickhouse/migrations/0381_drop_legacy_metrics_on_logs.py drops metrics2_backfill_series before dropping its dependent dictionary metrics2_backfill_series_dict, failing migrate_clickhouse in production and blocking deploys."
+                }
+            ]
+        },
+        {
+            "pr": 103937,
+            "fix_pr": 105316,
+            "title": "refactor(tags): stop writing the legacy tagged item keys",
+            "merged_at": "2026-09-23",
+            "head_sha": "f1cb5cc4ead6e6a268809d39ef4e5189427564fa",
+            "base_sha": "76b821efb4dc9f5c3b435852d581b0cd1c4dd165",
+            "category": "deploy_migration_hazard",
+            "split": "tune",
+            "changed_files": 21,
+            "additions": 152,
+            "deletions": 559,
+            "issues": [
+                {
+                    "id": "103937-R1",
+                    "claim": "posthog/migrations/1376_taggeditem_untrack_legacy_keys.py drops foreign keys to 13 parent tables in a single transaction, acquiring AccessExclusiveLock on posthog_taggeditem then parent tables in opposite order from live readers and deadlocking production deploys."
+                }
+            ]
+        },
+        {
+            "pr": 120180,
+            "fix_pr": 120399,
+            "title": "feat(replay): add a recording-api route that encrypts blocks for a new session",
+            "merged_at": "2026-10-20",
+            "head_sha": "84562e797c0500f4efb546275b72dd3d31a5051f",
+            "base_sha": "9397edb9afb4ff2a7401a0fe5055216681ab5516",
+            "category": "rolling_deploy_cutover",
+            "split": "tune",
+            "changed_files": 7,
+            "additions": 396,
+            "deletions": 18,
+            "issues": [
+                {
+                    "id": "120180-R1",
+                    "claim": "nodejs/src/session-replay/recording-api/auth.ts requires a scoped JWT on the new encrypt route with no legacy-secret fallback, so every caller fails with 401 in production until the JWT signing key is deployed."
+                }
+            ]
+        },
+        {
+            "pr": 83059,
+            "fix_pr": 84891,
+            "title": "feat(workflows): support templated From overrides in email steps",
+            "merged_at": "2026-08-17",
+            "head_sha": "8df48e2ad76816105bc80f98f84eb69218672974",
+            "base_sha": "46ca9bbfb1f40fb102fcf2409b88ac43a7a39d3a",
+            "category": "unbackfilled_legacy_rows",
+            "split": "tune",
+            "changed_files": 17,
+            "additions": 421,
+            "deletions": 97,
+            "issues": [
+                {
+                    "id": "83059-R1",
+                    "claim": "Making the email step's From override load-bearing in resolveFromEmailAddress breaks existing production steps that already hold a stored placeholder sender address off the integration's verified domain, failing every send after deploy (INC-990)."
+                }
+            ]
+        },
+        {
+            "pr": 82610,
+            "fix_pr": 133109,
+            "title": "feat(taxonomy): track 30-day query usage for properties",
+            "merged_at": "2026-11-10",
+            "head_sha": "5a85cbcc99244e9c9fd53a2f9af39111da2bd238",
+            "base_sha": "4cef067ce4ccee13ac73708e9e279b0943d1efe4",
+            "category": "deploy_migration_hazard",
+            "split": "holdout_recent",
+            "changed_files": 16,
+            "additions": 1584,
+            "deletions": 30,
+            "issues": [
+                {
+                    "id": "82610-R1",
+                    "claim": "posthog/management/commands/backfill_insights_query_metadata.py locks each batch of insight rows during query-metadata extraction, blocking live user insight saves while the backfill runs in production."
+                }
+            ]
+        },
+        {
+            "pr": 136756,
+            "fix_pr": 137598,
+            "title": "feat(logs): add a command that moves stock alert destinations off hog functions",
+            "merged_at": "2026-11-17",
+            "head_sha": "1378c0cf6e7b07f7f1ce16c1ac0fcc83d896a51f",
+            "base_sha": "603945aec9123ddc39faf906dde36bdfc49c33fe",
+            "category": "rolling_deploy_cutover",
+            "split": "holdout_recent",
+            "changed_files": 7,
+            "additions": 434,
+            "deletions": 1,
+            "issues": [
+                {
+                    "id": "136756-R1",
+                    "claim": "products/logs/backend/destination_conversion.py retires legacy HogFunction destinations during cutover without draining or fencing already-queued legacy alert events, dropping in-flight notifications."
+                }
+            ]
+        },
+        {
+            "pr": 134689,
+            "fix_pr": 138993,
+            "title": "feat(batch-exports): update query, filters and custom schema for `events_json`",
+            "merged_at": "2026-11-18",
+            "head_sha": "cfd1ddaaad7f9a25e12bb906040054258f49ce8a",
+            "base_sha": "d5ac4dde7d27250e80ed29edd924af3d517dcd49",
+            "category": "unbackfilled_legacy_rows",
+            "split": "holdout_recent",
+            "changed_files": 17,
+            "additions": 581,
+            "deletions": 169,
+            "issues": [
+                {
+                    "id": "134689-R1",
+                    "claim": "products/batch_exports/backend/custom_events_schema.py switches custom events schemas to recompile against events_json, breaking already-saved schemas created by users with property restrictions whose stored hogql_query was previously dropped."
+                }
+            ]
+        },
+        {
+            "pr": 72913,
+            "fix_pr": 83804,
+            "title": "feat(workflows): encrypt secret function inputs on hog flow actions",
+            "merged_at": "2026-07-27",
+            "head_sha": "68221277ed75f963f02579428536b6f9f72ab728",
+            "base_sha": "a9f6638fa7b3b457018815e50c559b6a0e0b477a",
+            "category": "unbackfilled_legacy_rows",
+            "split": "golden_set_overlap",
+            "changed_files": 11,
+            "additions": 1053,
+            "deletions": 19,
+            "issues": [
+                {
+                    "id": "72913-R1",
+                    "claim": "Moving secret HogFlow action inputs to an encrypted column without backfilling or migrating existing rows causes an ordinary re-save of a pre-existing legacy flow to drop its stored secret (INC-987)."
+                }
+            ]
+        },
+        {
+            "pr": 19938,
+            "fix_pr": 20232,
+            "title": "feat: Don't Label Users as Quota Limited for N Days After They Exceed Their Quota",
+            "merged_at": "2024-02-09",
+            "head_sha": "f5483e6cdce606c1079898439e381e551650da27",
+            "base_sha": "87672d08aaeb40286c9f7e8c5284c22b0d3b33b4",
+            "category": "first_run_cache_quota",
+            "split": "golden_set_overlap",
+            "changed_files": 6,
+            "additions": 422,
+            "deletions": 137,
+            "issues": [
+                {
+                    "id": "19938-R1",
+                    "claim": "ee/billing/quota_limiting.py moves already over-quota tokens into a new grace-period Redis set on the first post-deploy run while capture still reads the old limiter set, lifting quota enforcement on existing over-quota orgs at deploy time (INC-154)."
+                }
+            ]
+        },
+        {
+            "pr": 25129,
+            "fix_pr": 25199,
+            "title": "feat(cohorts): day and night schedules for cohorts",
+            "merged_at": "2024-09-23",
+            "head_sha": "2e93bb089fb684d98a20b259d1dac6ea7c88efd0",
+            "base_sha": "94b9f28707b8f0b43156e0693828657e07419ef2",
+            "category": "first_run_cache_quota",
+            "split": "golden_set_overlap",
+            "changed_files": 5,
+            "additions": 57,
+            "deletions": 19,
+            "issues": [
+                {
+                    "id": "25129-R1",
+                    "claim": "posthog/tasks/scheduled.py registers day/night cohort beat entries by passing a five-field cron string to crontab() as the minute argument instead of get_crontab, raising during Celery beat boot and leaving all later periodic tasks unregistered on deploy (INC-242)."
+                }
+            ]
+        },
+        {
+            "pr": 36834,
+            "fix_pr": 37167,
+            "title": "feat: Enforce 2FA",
+            "merged_at": "2025-08-26",
+            "head_sha": "a00cf43d3367724147b801c1ea4b77e44db7838e",
+            "base_sha": "57fdcc353977b5eaf92048de4ad88a74543f5425",
+            "category": "rolling_deploy_cutover",
+            "split": "golden_set_overlap",
+            "changed_files": 39,
+            "additions": 7157,
+            "deletions": 5406,
+            "issues": [
+                {
+                    "id": "36834-R1",
+                    "claim": "SessionAuthentication enforces 2FA on orgs with enforce_2fa enabled without exempting SSO-authenticated sessions, which never set the 2FA verified flag, locking existing SSO users into 403s on deploy (INC-496)."
+                }
+            ]
+        },
+        {
+            "pr": 17466,
+            "fix_pr": 19110,
+            "title": "feat: Add projection on inserted_at",
+            "merged_at": "2023-10-06",
+            "head_sha": "4102d4b0193c61b12f65e6515b358f46a1c15217",
+            "base_sha": "8ab153fa2f870dee67ec71734501aea09c402290",
+            "category": "deploy_migration_hazard",
+            "split": "golden_set_overlap",
+            "changed_files": 1,
+            "additions": 22,
+            "deletions": 0,
+            "issues": [
+                {
+                    "id": "17466-R1",
+                    "claim": "posthog/clickhouse/migrations/0049_add_inserted_at_projection.py adds a SELECT * projection and materializes it for the live events partition during deploy-time migration, causing heavy production cluster load (INC-120)."
+                }
+            ]
+        },
+        {
+            "pr": 39299,
+            "fix_pr": 39497,
+            "title": "feat: new endpoints required for listing workflows and getting agents",
+            "merged_at": "2025-10-09",
+            "head_sha": "b9b3733d948eff120b79a575aeba7de56f9aee33",
+            "base_sha": "18d19afd6ae1dcc67c2eb02b511102e4a751ea20",
+            "category": "deploy_migration_hazard",
+            "split": "golden_set_overlap",
+            "changed_files": 7,
+            "additions": 339,
+            "deletions": 11,
+            "issues": [
+                {
+                    "id": "39299-R1",
+                    "claim": "products/tasks/backend/migrations/0006_remove_workflowstage_agent_alter_task_workflow_and_more.py edits an already-applied Django migration instead of creating a new migration, so production databases never apply the schema change (INC-542)."
+                }
+            ]
+        },
+        {
+            "pr": 55662,
+            "fix_pr": 56117,
+            "title": "feat(tasks): skip CI follow-up reruns when PR is closed or unchanged",
+            "merged_at": "2026-04-23",
+            "head_sha": "8a29683c3908298b0e5ae69133ff3751f95562c7",
+            "base_sha": "c9ebd0adbd6a6575d85b9b9300a9747e3f822652",
+            "category": "inflight_workflow_replay",
+            "split": "golden_set_overlap",
+            "changed_files": 5,
+            "additions": 617,
+            "deletions": 6,
+            "issues": [
+                {
+                    "id": "55662-R1",
+                    "claim": "products/tasks/backend/temporal/process_task/workflow.py schedules a new Temporal activity ahead of an existing one without workflow.patched(), causing replay nondeterminism for already in-flight workflows on deploy (INC-815)."
+                }
+            ]
+        },
+        {
+            "pr": 44198,
+            "fix_pr": 46696,
+            "title": "feat: add project secret api key API & authenticator",
+            "merged_at": "2026-02-03",
+            "head_sha": "8657bbdeef7fa6565a7528298e9ea7d802bdbf75",
+            "base_sha": "d0e984f65726566122e072d59d575bd291df8936",
+            "category": "rolling_deploy_cutover",
+            "split": "golden_set_overlap",
+            "changed_files": 21,
+            "additions": 1362,
+            "deletions": 66,
+            "issues": [
+                {
+                    "id": "44198-R1",
+                    "claim": "posthog/auth.py adds a phs_ guard in the shared personal-API-key lookup that raises instead of returning None, breaking existing callers authenticating with legacy secret tokens on local-evaluation endpoints (INC-702)."
+                }
+            ]
+        }
+    ],
+    "clean": [
+        {
+            "pr": 124637,
+            "title": "feat(messaging): add hard_bounced_at to the email suppression list",
+            "merged_at": "2026-10-29",
+            "head_sha": "0c981736fb63e14130aa4a29c6aebe040b366d10",
+            "base_sha": "494287d1fb59096e5e6e022f32f31b961cfd39fb",
+            "changed_files": 3,
+            "additions": 21,
+            "deletions": 1,
+            "why_safe": "Pure additive nullable column (hard_bounced_at) on MessageSuppression; no reader depends on it yet."
+        },
+        {
+            "pr": 131161,
+            "title": "feat(tasks): add task status columns and mirror run status",
+            "merged_at": "2026-11-11",
+            "head_sha": "01c1bc5b130aabe44218659f11dcf6eacdd2e322",
+            "base_sha": "187b8ee95f66a0dd1fccba241e8f063e893368c8",
+            "changed_files": 24,
+            "additions": 1051,
+            "deletions": 47,
+            "why_safe": "Stage 2 additive Task status columns + dual-write save hook after commit; nothing reads the new columns yet."
+        },
+        {
+            "pr": 125374,
+            "title": "feat(messaging): set hard_bounced_at from the suppression writers",
+            "merged_at": "2026-10-29",
+            "head_sha": "cfc9abdb2252cb802f4e98ff082ecc40ffc361ac",
+            "base_sha": "29879146381cef20262dc8ffc4fada894bba2c1a",
+            "changed_files": 5,
+            "additions": 45,
+            "deletions": 7,
+            "why_safe": "Populates hard_bounced_at on suppression writers while #124638 keeps legacy reason-text fallback for older rows."
+        },
+        {
+            "pr": 131165,
+            "title": "feat(tasks): mark tasks done behind a per-profile flag",
+            "merged_at": "2026-11-13",
+            "head_sha": "5e4854a020cab60a78931753dcb25e996b26ea49",
+            "base_sha": "10e8bfc9c062a644d75128d4f84a191a1e546830",
+            "changed_files": 31,
+            "additions": 1126,
+            "deletions": 141,
+            "why_safe": "Flag-gated task-done rollout (off/shadow/enforce, default off) with safe rollback and Temporal patching."
+        },
+        {
+            "pr": 127699,
+            "title": "feat(oauth): return supports_step_up from token introspection",
+            "merged_at": "2026-11-03",
+            "head_sha": "db81e22c5f36be3eb584a5905a67e19f169b4cbf",
+            "base_sha": "dab7d9e2900e6f1817882416cf900ff207da0af9",
+            "changed_files": 2,
+            "additions": 12,
+            "deletions": 3,
+            "why_safe": "Additive supports_step_up field on OAuth token introspection; ID-JAG tokens default safely to false."
+        },
+        {
+            "pr": 109984,
+            "title": "feat: backfill legacy secret tokens into PSAK table",
+            "merged_at": "2026-10-06",
+            "head_sha": "2aaef66b4892331855e6670e178a6ff4fc3919d5",
+            "base_sha": "d51b157483b2eb941d99e0af2076a96730130816",
+            "changed_files": 3,
+            "additions": 246,
+            "deletions": 1,
+            "why_safe": "Properly sequenced PSAK backfill migration that explicitly waited for #111078 compatibility fixes to land first."
+        },
+        {
+            "pr": 124425,
+            "title": "feat(messaging): add provider import run model",
+            "merged_at": "2026-10-28",
+            "head_sha": "080cf548c3923daf779961e4e82d701f6510cfb7",
+            "base_sha": "886ea4c1b43a6b638fb62e8ab8d282c81aeb754d",
+            "changed_files": 5,
+            "additions": 185,
+            "deletions": 1,
+            "why_safe": "Additive new ProviderImportRun model and initial table migration; no pre-existing rows affected."
+        },
+        {
+            "pr": 126927,
+            "title": "feat(warehouse_sources): deprecate profound api version v1",
+            "merged_at": "2026-11-02",
+            "head_sha": "8c470b3f732d385cc4d97e90334243c9dadfa473",
+            "base_sha": "bb2c0d42d3ac05c0a3eac3eaa4c9afbb6cca8939",
+            "changed_files": 4,
+            "additions": 49,
+            "deletions": 6,
+            "why_safe": "Small bounded repin migration for deprecated Profound API v1 sources."
+        },
+        {
+            "pr": 128353,
+            "title": "chore(data-modeling): delete the in-workflow trino shadow comparison",
+            "merged_at": "2026-11-03",
+            "head_sha": "84f30afd3d5d4212db4350c5035f56cd55af4255",
+            "base_sha": "1508e65b9f219fdafdd0c0f1581f745316ccd9b0",
+            "changed_files": 3,
+            "additions": 4,
+            "deletions": 294,
+            "why_safe": "Clean removal of already-retired in-workflow Trino shadow comparison in Temporal workflow."
+        },
+        {
+            "pr": 129897,
+            "title": "feat(slack_app): remind people once when their slack onboarding stalls",
+            "merged_at": "2026-11-05",
+            "head_sha": "e33447c04f81ed6015a4d83346c672213ba52a19",
+            "base_sha": "911bf2d3bcbea34f3d1eae659800a57f6602727f",
+            "changed_files": 8,
+            "additions": 98,
+            "deletions": 6,
+            "why_safe": "New Temporal onboarding reminder workflow/activity; does not mutate existing in-flight workflow histories."
+        },
+        {
+            "pr": 127259,
+            "title": "feat(weekly-digest): add a command to resend a digest to chosen organizations",
+            "merged_at": "2026-11-02",
+            "head_sha": "319f4de31a47d211e3ccc37cbd644f37fdb6f3d3",
+            "base_sha": "cc83ffc505509ba9e0b062c2fcf68a69f5527b55",
+            "changed_files": 7,
+            "additions": 199,
+            "deletions": 5,
+            "why_safe": "Explicitly scoped operator management command to resend weekly digest for chosen org IDs."
+        },
+        {
+            "pr": 127455,
+            "title": "feat(signals): rank the error tracking backfill by user impact",
+            "merged_at": "2026-11-03",
+            "head_sha": "4eaee422f72ff7a1de0569d7437b2a37f95bbefa",
+            "base_sha": "609e03c6e294aab861b7dcffe4e82e6c7de40fde",
+            "changed_files": 7,
+            "additions": 370,
+            "deletions": 34,
+            "why_safe": "Bounded ranking update for error tracking backfill without altering persisted schema or lock scope."
+        }
+    ]
+}
