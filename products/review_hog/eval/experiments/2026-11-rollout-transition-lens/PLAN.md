@@ -1,10 +1,10 @@
 # PLAN: rollout-transition lens for changes that meet live production state
 
-Status: revised after a 2-model adversarial review (Claude Opus 5.5 + Codex GPT-6.2 Sol); ready for Step 1 baseline on `tune` and expansion of the unseen holdout before any flag decision.
+Status: pilot complete, see [FINAL_REPORT.md](./FINAL_REPORT.md). The lens is not wired into the review workflow. The plan below is kept as written before the runs, apart from the case-set and router numbers.
 
 **Question:** on a PR that changes files meeting live production state (migrations, persisted models/schemas, durable workflows, scheduled jobs, backfill commands, billing/quota enforcement, auth/secret verification, or cache/Redis layers), does Standard with a rollout-transition lens find deploy-time and existing-state failures that Standard alone misses, without adding noise, exceeding shipped-lens token cost, or displacing Standard's findings?
 
-Motivation: Recommendation 3 of [`2026-09-incident-golden-set/FINAL_REPORT.md`](../2026-09-incident-golden-set/FINAL_REPORT.md) noted that ReviewHog reasons well about steady-state code and poorly about the rollout transition (*"what does the first run after deploy see that the steady state does not"* — INC-990, INC-987, INC-154, INC-242, plus INC-120 and INC-542). Recent fix and revert commits in `PostHog/posthog` (Sep–Nov 2026) confirm the same failure classes still ship to production.
+Motivation: Recommendation 3 of [`2026-09-incident-golden-set/FINAL_REPORT.md`](../2026-09-incident-golden-set/FINAL_REPORT.md) noted that ReviewHog reasons well about steady-state code and poorly about the rollout transition (_"what does the first run after deploy see that the steady state does not"_ — INC-990, INC-987, INC-154, INC-242, plus INC-120 and INC-542). Recent fix and revert commits in `PostHog/posthog` (Sep–Nov 2026) confirm the same failure classes still ship to production.
 
 ## Surface & architecture
 
@@ -18,7 +18,7 @@ Motivation: Recommendation 3 of [`2026-09-incident-golden-set/FINAL_REPORT.md`](
 
 ### Plumbing, replay safety, and multi-lane interaction
 
-- **Temporal replay safety (additive only — never rename):** keep `ReviewMeta.devex_lens`, `devex_lens_routed`, `SandboxStageInput.devex_lens`, `PRSnapshot.devex_lens_files`, and `lens_inputs["devex_lens"]` byte-identical for recorded histories and snapshots. Add `rollout_transition_lens`, `rollout_transition_lens_routed`, `rollout_transition_lens_files` with defaults, gate workflow branching behind a new `workflow.patched("flash-rollout-transition-lens-2026-12")` before the meta read, and append the new unit *after* `devex` in `lens_units`. Widen the pass-number filter (`activities.py:1934-1938`) and budget exclusion (`finding_budget.py:129`) to the set of optional-lane sources.
+- **Temporal replay safety (additive only — never rename):** keep `ReviewMeta.devex_lens`, `devex_lens_routed`, `SandboxStageInput.devex_lens`, `PRSnapshot.devex_lens_files`, and `lens_inputs["devex_lens"]` byte-identical for recorded histories and snapshots. Add `rollout_transition_lens`, `rollout_transition_lens_routed`, `rollout_transition_lens_files` with defaults, gate workflow branching behind a new `workflow.patched("flash-rollout-transition-lens-2026-12")` before the meta read, and append the new unit _after_ `devex` in `lens_units`. Widen the pass-number filter (`activities.py:1934-1938`) and budget exclusion (`finding_budget.py:129`) to the set of optional-lane sources.
 - **Two optional lanes on one PR cannot double-post:** e.g., a `products/review_hog/backend/temporal/` PR triggers both `devex` and `rollout_transition`. Optional-lane dedup must anchor the second lane against `[*main, *lens, *first_optional_lane]` (or run one ordered optional-lane dedup call), and run the restore-to-lane (`single_agent_review.py:914-940`) and same-lane priority raise (`:597`) per lane.
 - **Coordinator, delta turns, follow-ups, and concurrency:**
   - Coordinated PRs (`reviewhog-standard-coordinator`) do not run optional lanes today; confirm with `team-devex` what share of PRs is coordinated before wiring a coordinator slot.
@@ -40,7 +40,7 @@ Implemented in [`products/review_hog/backend/reviewer/rollout_routing.py`](../..
 - **Reproducible measurement (`measure_router.py` on `master` as of 2026-11-22):**
   - Last 500 first-parent `master` commits: **68/500 (13.6%)** routed, median 1 trigger file, p95 = 5.
   - `holdout_unseen`: **17/29 (59%)** routed, 14/25 in the five rollout classes. This is the out-of-sample recall; the 12 unrouted cases count as lens misses. Misses include defects in `posthog/schema.py` (excluded as generated), Rust services, frontend-persisted state, and backend logic files whose names carry no trigger word. Do not tune the router on these cases.
-  - Pilot `cases.json` defects (tune, holdout_recent, golden_set_overlap): **17/17 (100%)** *(note: in-sample on the initial mining batch; out-of-sample router recall must be verified on fresh unseen holdout PRs before flag-on).*
+  - Pilot `cases.json` defects (tune, holdout*recent, golden_set_overlap): **17/17 (100%)** *(note: in-sample on the initial mining batch; out-of-sample router recall must be verified on fresh unseen holdout PRs before flag-on).\_
 
 ## Step 1: is there a gap at all (tune split only)
 
@@ -63,10 +63,10 @@ Generated and verified programmatically against GitHub GraphQL (`headRefOid` + `
 
 ## Arms & scoring protocol
 
-| Arm     | What runs                                                                 |
-| ------- | ------------------------------------------------------------------------- |
-| Control | Standard on the code-default arm set (`main` + 2 shipped lenses)          |
-| Lens    | Same control sessions + `lens_rollout_transition.md` in its own lane      |
+| Arm     | What runs                                                            |
+| ------- | -------------------------------------------------------------------- |
+| Control | Standard on the code-default arm set (`main` + 2 shipped lenses)     |
+| Lens    | Same control sessions + `lens_rollout_transition.md` in its own lane |
 
 - Both arms share the same control sessions, production publish threshold, production dedup rules, and turn/lane caps.
 - Two runs per arm; report both runs, paired PR-level deltas (wins / ties / losses by PR), and blind-judge disagreements. Local pilot uses `SingleAgentPrompt` + `codex exec` read-only on `SINGLE_AGENT_FLASH_ARM`; final validation runs through `manage.py run_review` with `team-devex`.
@@ -75,15 +75,15 @@ Generated and verified programmatically against GitHub GraphQL (`headRefOid` + `
 
 Frozen before the first lens run (pilot validates mechanics on `tune` + seed `holdout_recent`; **live flag-on requires passing all bars on the expanded ≥25-case unseen holdout**):
 
-| Bar                                                                          | Needed                                                                                                          |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Labeled issues found (full published mechanism match, paired by PR, 2 runs)  | Lens ≥20 points above control on the unseen holdout, with net positive paired PR wins on both runs              |
-| Precision on **new posted root causes** from the lens (blind judge)          | ≥70% valid and minor or worse (report numerator/denominator; minimum 10 new posted root causes to pass)         |
-| Clean controls (12 hard negatives)                                           | At most +0.5 extra posted findings/PR vs. control, AND report count of clean PRs receiving any invalid/overstated finding |
-| Control findings displaced or priority-changed                               | 0 displaced and 0 priority-changed on shared findings (enforced structurally by own-lane; verified empirically) |
-| Incremental token cost (same routed PRs, including dedup)                    | Median lens session tokens ≤ median shipped lens session; report median, p95, and total incremental cost        |
-| Latency & timeouts                                                           | p95 lens session wall time ≤ 10 min (`FLASH_LENS_SESSION_TIMEOUT`), timeout rate ≤ 5%                           |
-| Must-fix (P1) calibration (reviewer trust)                                   | ≥75% of lens `must_fix` findings judged major or worse by blind judge (report numerator/denominator; min n=4)   |
+| Bar                                                                         | Needed                                                                                                                    |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Labeled issues found (full published mechanism match, paired by PR, 2 runs) | Lens ≥20 points above control on the unseen holdout, with net positive paired PR wins on both runs                        |
+| Precision on **new posted root causes** from the lens (blind judge)         | ≥70% valid and minor or worse (report numerator/denominator; minimum 10 new posted root causes to pass)                   |
+| Clean controls (12 hard negatives)                                          | At most +0.5 extra posted findings/PR vs. control, AND report count of clean PRs receiving any invalid/overstated finding |
+| Control findings displaced or priority-changed                              | 0 displaced and 0 priority-changed on shared findings (enforced structurally by own-lane; verified empirically)           |
+| Incremental token cost (same routed PRs, including dedup)                   | Median lens session tokens ≤ median shipped lens session; report median, p95, and total incremental cost                  |
+| Latency & timeouts                                                          | p95 lens session wall time ≤ 10 min (`FLASH_LENS_SESSION_TIMEOUT`), timeout rate ≤ 5%                                     |
+| Must-fix (P1) calibration (reviewer trust)                                  | ≥75% of lens `must_fix` findings judged major or worse by blind judge (report numerator/denominator; min n=4)             |
 
 A lens that fails a bar does not turn its flag on.
 
