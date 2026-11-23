@@ -735,7 +735,9 @@ def build_sessions_for_pr(bundle: dict, arm: str) -> list[tuple[str, str]]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--split", choices=["tune", "holdout_recent", "golden_set_overlap", "clean"], default="tune")
+    parser.add_argument(
+        "--split", choices=["tune", "holdout_recent", "holdout_unseen", "golden_set_overlap", "clean"], default="tune"
+    )
     parser.add_argument("--arm", choices=["control", "lens", "both"], default="both")
     parser.add_argument("--run-id", default="run1")
     parser.add_argument("--work-dir", required=True, help="Scratch directory outside repo for caches and outputs")

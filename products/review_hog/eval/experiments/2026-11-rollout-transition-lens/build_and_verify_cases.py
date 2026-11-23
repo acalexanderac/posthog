@@ -17,6 +17,8 @@ EXP_DIR = Path(__file__).resolve().parent
 # NOTE:
 # - `tune` is used for Step 1 stop-rule checks and prompt iteration.
 # - `holdout_recent` contains recent (Sep-Nov 2026) PRs kept untouched during prompt tuning.
+# - `holdout_unseen` contains Jul-Nov 2026 pairs mined from fix PR descriptions after the prompt and router
+#   were frozen; never use it to adjust either.
 # - `golden_set_overlap` contains older (2023-2026) public golden-set PRs scored separately
 #   because older PRs may appear in model training data and some were already Deep hits.
 DEFECT_SPECS = [
@@ -224,6 +226,355 @@ DEFECT_SPECS = [
             {
                 "id": "44198-R1",
                 "claim": "posthog/auth.py adds a phs_ guard in the shared personal-API-key lookup that raises instead of returning None, breaking existing callers authenticating with legacy secret tokens on local-evaluation endpoints (INC-702).",
+            }
+        ],
+    },
+    # --- HOLDOUT UNSEEN (Jul-Nov 2026 fix/revert pairs mined after the prompt and router were frozen) ---
+    {
+        "pr": 70552,
+        "fix_pr": 70799,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "70552-R1",
+                "claim": "posthog/schema.py makes FunnelsQuery.series a union discriminated on `kind` (generated from FunnelsQuerySeriesNodeUnion in schema-general.ts), where kind-less items used to be coerced to EventsNode. Saved funnel insights whose stored series items have no `kind` now fail validation with union_tag_not_found when they are loaded.",
+            }
+        ],
+    },
+    {
+        "pr": 72741,
+        "fix_pr": 128856,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "72741-R1",
+                "claim": "rust/personhog-leader/src/service.rs adds `assert_writeable`, which refuses any record whose `created_at` is below 0, on the assumption that every legitimately created person falls in [1970, 9999]. Persons already in Postgres with a pre-1970 `created_at` (year 1, from a client's zero DateTime) are refused as not writeable on every property write.",
+            }
+        ],
+    },
+    {
+        "pr": 73266,
+        "fix_pr": 75717,
+        "category": "rolling_deploy_cutover",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "73266-R1",
+                "claim": "rust/personhog-test-harness/src/scenarios/traffic.rs calls seed::cleanup_team, a delete of every row for the team, at startup, at each epoch's pool rotation and at shutdown. When a rolling restart briefly runs an old and a new traffic-bed pod against the same team, either pod deletes the other's live person pool, so in-flight writes fail with not-found and the dying pod's close-out reports false consistency violations.",
+            }
+        ],
+    },
+    {
+        "pr": 81193,
+        "fix_pr": 124417,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "81193-R1",
+                "claim": "posthog/hogql/compiler/bytecode.py now raises QueryError when a name is used inside its own non-lambda declaration (`let x := f(x)`). Evaluation.save() recompiles the stored Hog source on every save, so for evaluations saved earlier with that pattern every save raises ValidationError and rolls back, including status-only set_status, pause and delete.",
+            }
+        ],
+    },
+    {
+        "pr": 83784,
+        "fix_pr": 86483,
+        "category": "rolling_deploy_cutover",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "83784-R1",
+                "claim": "posthog/settings/base_variables.py adds a per-process MANAGED_WAREHOUSE_DYNAMIC_SQL_EDITOR_AUTH_ENABLED env gate (default false), which provisioning in web workers and recovery/cleanup tasks in Celery workers each read independently. When the deployed web and task workers carry different values for this setting, one side creates static org_root sources while the other expects or schedules dynamic generation-fenced setup, so provisioning and recovery choose different authentication modes.",
+            }
+        ],
+    },
+    {
+        "pr": 86477,
+        "fix_pr": 99706,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "86477-R1",
+                "claim": "products/signals/backend/implementation_pr.py adds pr_bearing_task_run_filter, which keys the SQL exclusion on the run's state.ai_stage stamp and lets runs without a stamp through, while the Python reader excludes by the association's run type. So on existing research tasks whose runs predate the stamp and recorded a PR URL, the has_implementation_pr and unclaimed filters count the report as having a PR even though the report reader shows none.",
+            }
+        ],
+    },
+    {
+        "pr": 86493,
+        "fix_pr": 91685,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "86493-R1",
+                "claim": "posthog/api/email_verification.py decides the email-change code target with a truthiness check on `user.is_email_verified`, both in `send_code` and in `check_code`'s `expected_target`. For existing accounts from before email verification, where `is_email_verified` is NULL, the expected target becomes '' and the email-change code can never match, so the change cannot complete.",
+            }
+        ],
+    },
+    {
+        "pr": 94017,
+        "fix_pr": 95554,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "94017-R1",
+                "claim": "products/signals/backend/implementation_pr.py makes close_implementation_pr_for_report look up only the new SignalReportAssignment row and return early when it is missing or has no pr_url. The same PR's webhook matching and PR-checks lookup also key on assignment repository and pr_number, so existing reports whose PR is linked only through task runs (which were never backfilled into assignments) are no longer closed on dismissal, matched by merge/close webhooks, or given PR checks.",
+            }
+        ],
+    },
+    {
+        "pr": 95132,
+        "fix_pr": 95623,
+        "category": "rolling_deploy_cutover",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "95132-R1",
+                "claim": "products/signals/backend/scout_harness/runner.py now dispatches every scout with `posthog_mcp_scopes=scope_posture`, a dict, instead of the preset string. A sandbox worker still on the previous deploy has `PosthogMcpScopes = McpScopePreset | list[str] | ScoutScopePosture`, so Temporal decodes the dict as `list[str]` of its keys. The token is then minted with only `preset` and `extra_write_scopes`, and the run loses every scout and read scope.",
+            }
+        ],
+    },
+    {
+        "pr": 98358,
+        "fix_pr": 100003,
+        "category": "inflight_workflow_replay",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "98358-R1",
+                "claim": "products/tasks/backend/temporal/process_task/workflow.py makes the `agent_state_changed` signal set `_turn_ended_received`, which wakes `_wait_for_task_external_event` and makes the run loop `continue` into a fresh wait, without any `workflow.patched` guard. When a ProcessTaskWorkflow started before the rollout replays an `agent_state_changed(False)` signal, it now issues commands its history never recorded, so replay fails with a nondeterminism error.",
+            }
+        ],
+    },
+    {
+        "pr": 99183,
+        "fix_pr": 100938,
+        "category": "deploy_migration_hazard",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "99183-R1",
+                "claim": "posthog/clickhouse/migrations/0322_add_snapshot_mode_v2_to_session_replay_events.py runs CHECK_REPLAY_SCHEMA `throwIf` guards on every data and ingestion node before any DDL. On existing ClickHouse tables that still hold the legacy `snapshot_mode` column or a `snapshot_source` aggregate of a different type, the guard throws and the migration runner stops.",
+            }
+        ],
+    },
+    {
+        "pr": 99917,
+        "fix_pr": 100779,
+        "category": "deploy_migration_hazard",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "99917-R1",
+                "claim": "posthog/migrations/1353_drop_retired_ducklake_tables.py runs a raw `DROP TABLE IF EXISTS posthog_ducklakecatalog, posthog_ducklakebackfill` under only `SET LOCAL lock_timeout = '2s'`. The drop takes ACCESS EXCLUSIVE one relation at a time on the hot parents those tables' foreign keys reference (posthog_team, posthog_organization, posthog_user), so on a live database its lock order crosses that of concurrent multi-table application reads, and Postgres's deadlock detector aborts those reads as victims.",
+            }
+        ],
+    },
+    {
+        "pr": 101691,
+        "fix_pr": 112659,
+        "category": "deploy_interrupts_inflight_work",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "101691-R1",
+                "claim": "products/warehouse_sources/backend/temporal/data_imports/sources/metronome/metronome.py adds `_parallel_usage_pages`, which commits the customer checkpoint only after the `yield` returns, advances it only when a batch is yielded, and blocks on `future.result()`. When a deploy drains the worker in the middle of a usage sync, the pipeline ends the attempt after writing a batch, so that batch's checkpoint and any customers with no usage are never recorded, and each new attempt restarts at the first customer until the resume retries run out.",
+            }
+        ],
+    },
+    {
+        "pr": 104566,
+        "fix_pr": 127889,
+        "category": "deploy_migration_hazard",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "104566-R1",
+                "claim": "posthog/clickhouse/migrations/0364_sessions_v3_more_ad_ids.py creates the v3 ingestion MVs, which now emit `uniq` states, on top of whatever v3 table already exists off cloud. On self-hosted installs that created raw_sessions_v3 before the shape change, the table still has `uniqExact` columns, so creating the MV fails and migrate_clickhouse stops at 0364.",
+            }
+        ],
+    },
+    {
+        "pr": 106933,
+        "fix_pr": 107735,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "106933-R1",
+                "claim": "products/signals/backend/scout_harness/config_registry.py selects setup-flow pauses with `status_changed_by__isnull=True`, and the resume lock check refuses rows with a `status_changed_by_id`. The existing operational scout rows that the old setup flow paused over MCP carry the user in `status_changed_by`, so `resume_setup_paused_operational_scouts` selects none of them and they stay paused.",
+            }
+        ],
+    },
+    {
+        "pr": 113788,
+        "fix_pr": 114754,
+        "category": "rolling_deploy_cutover",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "113788-R1",
+                "claim": "products/review_hog/backend/internal_features.py makes has_internal_features evaluate the new per-project `review-hog-internal` feature flag, a missing flag reads as off, and automatic Flash reviews, the label trigger, manual Flash, resolution, Inbox reviews and the tiered arms are gated on it. Those parts previously ran for the internal project through the REVIEWHOG_TEAM_IDS gate, so in a production where the flag had never been created they all stopped silently after deploy.",
+            }
+        ],
+    },
+    {
+        "pr": 115963,
+        "fix_pr": 120726,
+        "category": "rolling_deploy_cutover",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "115963-R1",
+                "claim": "posthog/schema.py removes the `voice_mode` field from `MaxUIContext`, a model that forbids extra fields. Browser tabs still running the pre-deploy frontend keep sending `ui_context.voice_mode`, so their chat messages fail validation in the conversation serializers with HTTP 400 until the tab is reloaded.",
+            }
+        ],
+    },
+    {
+        "pr": 116696,
+        "fix_pr": 118764,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "116696-R1",
+                "claim": "products/billing_alerts/backend/presentation/serializers.py stops accepting and returning minimum_value, evaluation_delay_hours and cooldown_hours, while the model columns and billing's legacy hourly evaluator keep reading them. Billing alerts saved earlier with non-default values keep changing evaluation, and their owners can no longer see or reset those values.",
+            }
+        ],
+    },
+    {
+        "pr": 117313,
+        "fix_pr": 118540,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "117313-R1",
+                "claim": "products/today/backend/logic/highlight_sources/routine.py ranks insights only by the new `view_days` array and requires 8 distinct view days in the last 14, or 3 distinct weeks. Migration 1400 adds that column as nullable with no backfill, so existing FileSystemViewLog rows, including habitual users' recent views, read as `days or []` and score 0, leaving every routine pulse tile empty for about two weeks after deploy.",
+            }
+        ],
+    },
+    {
+        "pr": 118657,
+        "fix_pr": 129745,
+        "category": "first_run_cache_quota",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "118657-R1",
+                "claim": "products/engineering_analytics/backend/logic/views/incremental_floor.py turns the NULL `{incremental_window_start}` of a full build into an empty-string floor (`ifNull(..., '')`), so the first build of the stored CI views scans the team's entire existing job history in one ClickHouse query. On a busy repository's job history, that build exceeds the 600 second query limit and never completes.",
+            }
+        ],
+    },
+    {
+        "pr": 120169,
+        "fix_pr": 128241,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "120169-R1",
+                "claim": "products/endpoints/backend/materialization_transforms.py now makes `_usage_rejection` reject variables used inside multi-argument calls such as `concat('x-', {variables.item})`, which analysis used to accept. But `build_endpoint_hogql` in the same file discards the rejection, so endpoint versions already materialized with those shapes are rebuilt before each run without the transform, and the refresh fails with `Unable to resolve field: variables` on the raw placeholders.",
+            }
+        ],
+    },
+    {
+        "pr": 121086,
+        "fix_pr": 125617,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "121086-R1",
+                "claim": "products/workflows/frontend/Broadcasts/broadcastsLogic.ts adds a required `tags` field to the persisted `BroadcastsFilters` and reads `values.filters.tags.length`, but filters saved in the browser before this change have no `tags` and are restored as-is. On those stored filters, the URL handling and the tag picker dereference undefined, and the broadcasts list crashes.",
+            }
+        ],
+    },
+    {
+        "pr": 122005,
+        "fix_pr": 124043,
+        "category": "deploy_interrupts_inflight_work",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "122005-R1",
+                "claim": "products/warehouse_sources/backend/temporal/data_imports/person_property_backfill_job.py now catches the final ActivityError, including a WorkerShutdown from a deploy, and runs record_failed_person_property_backfill_runs_activity, which records a failed run through record_failed_runs. Each backfill a deploy stops mid-run therefore fails on its single attempt and counts toward consecutive_failures, so routine deploys can auto-disable a valid source.",
+            }
+        ],
+    },
+    {
+        "pr": 122437,
+        "fix_pr": 125911,
+        "category": "deploy_interrupts_inflight_work",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "122437-R1",
+                "claim": "products/aeo/backend/runner.py now runs up to AEO_MAX_PROMPTS_PER_RUN (2,000) prompts in a single task that takes hours, with the time limit in tasks.py raised to 10 hours, while beat still dispatches it only once a day. So when a deploy restarts the long-running Celery workers mid-run, the in-flight task dies, nothing dispatches it again that day, and most prompts go unchecked.",
+            }
+        ],
+    },
+    {
+        "pr": 126129,
+        "fix_pr": 129537,
+        "category": "rolling_deploy_cutover",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "126129-R1",
+                "claim": "frontend/src/queries/schema/schema-general.ts makes `WebVitalsItem.action` optional because the runner no longer writes it, and the PR drops `action` from every trends result row. Toolbar bundles already shipped with older posthog-js releases find each web vitals metric by `results[].action.custom_name`, so on those sites the `/web_vitals` panel throws `a.action is undefined` and shows nothing.",
+            }
+        ],
+    },
+    {
+        "pr": 127448,
+        "fix_pr": 131753,
+        "category": "first_run_cache_quota",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "127448-R1",
+                "claim": "products/tasks/backend/logic/services/compute_settlement.py adds an hourly sweep whose `_overdue_ended` selects every ended, user-attributed SandboxSession with null `compute_settled_at` and `compute_settle_conflict_at`, with no lower bound on `ended_at`. Migration 0145 creates those columns as null on every existing row, so the first sweep after GATEWAY_COMPUTE_DEBIT_ENABLED is turned on posts a compute debit to the gateway ledger for every historical sandbox session.",
+            }
+        ],
+    },
+    {
+        "pr": 131167,
+        "fix_pr": 131942,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "131167-R1",
+                "claim": "products/warehouse_sources/backend/logic/source_credentials_rollout.py drops the job_inputs fallback, so a read takes the OAuth pointer only from the credentials_integration_id column and raises SourceCredentialsMissingError when that column is empty. On existing non-stripped OAuth sources that never had the column written and keep no pointer in job_inputs (Google Ads, HubSpot), syncs and schema discovery fail.",
+            }
+        ],
+    },
+    {
+        "pr": 133413,
+        "fix_pr": 137939,
+        "category": "deploy_interrupts_inflight_work",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "133413-R1",
+                "claim": "products/managed_warehouse/backend/tasks/tasks.py registers run_trino_compile_check_task as a single long_running Celery task with default early acks that checks every model of a team in one execution. When a deploy replaces the worker mid-run, the already-acked task is never redelivered, so the run never emits trino_compile_check_completed.",
+            }
+        ],
+    },
+    {
+        "pr": 133491,
+        "fix_pr": 134496,
+        "category": "unbackfilled_legacy_rows",
+        "split": "holdout_unseen",
+        "issues": [
+            {
+                "id": "133491-R1",
+                "claim": "products/signals/backend/activity_summary/prompt.py sets MIN_PROMPT_VERSION = 9, equal to the current PROMPT_VERSION, and render.py likewise sets MIN_RENDER_VERSION = 13. Stored summaries still on prompt 8 or render 12, left over from the version bump merged the day before, therefore fall below the floor, are forced into an immediate full rebuild instead of aging in, and stop being served when that rebuild skips.",
             }
         ],
     },
