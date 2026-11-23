@@ -1,6 +1,6 @@
 <!--
-DevEx-owned guidelines of the rollout-transition lens session of the single-agent Flash review.
-The builder strips this comment before sending the text.
+Pilot prompt for a rollout-transition lens session of the single-agent Flash review.
+The product does not load this file. run_pilot.py strips this comment before sending the text.
 
 This session runs only when the pull request changes files that meet live production state
 (migrations, persisted models/schemas, durable workflows, scheduled jobs, backfill commands,

@@ -10,11 +10,9 @@ base_sha and head_sha (no origin/master or later commits).
 from __future__ import annotations
 
 import re
-import sys
 import json
 import math
 import time
-import types
 import shutil
 import argparse
 import posixpath
@@ -85,25 +83,7 @@ class PRFileLite:
 
 
 def _load_rollout_routing():
-    for pkg in [
-        "products",
-        "products.review_hog",
-        "products.review_hog.backend",
-        "products.review_hog.backend.reviewer",
-        "products.review_hog.backend.reviewer.models",
-    ]:
-        sys.modules.setdefault(pkg, types.ModuleType(pkg))
-    c_mod = types.ModuleType("products.review_hog.backend.reviewer.constants")
-    c_mod.FLASH_LENS_CHUNK_MAX_LINES = FLASH_LENS_CHUNK_MAX_LINES  # type: ignore[attr-defined]
-    sys.modules["products.review_hog.backend.reviewer.constants"] = c_mod
-    gm_mod = types.ModuleType("products.review_hog.backend.reviewer.models.github_meta")
-    gm_mod.PRFile = PRFileLite  # type: ignore[attr-defined]
-    sys.modules["products.review_hog.backend.reviewer.models.github_meta"] = gm_mod
-
-    spec = importlib.util.spec_from_file_location(
-        "rollout_routing",
-        REPO_ROOT / "products/review_hog/backend/reviewer/rollout_routing.py",
-    )
+    spec = importlib.util.spec_from_file_location("rollout_routing", EXP_DIR / "rollout_routing.py")
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -131,7 +111,8 @@ def is_rule_file(path: str) -> bool:
 
 
 def load_prompt_file(name: str) -> str:
-    text = (PROMPT_DIR / name).read_text(encoding="utf-8")
+    path = EXP_DIR / name if (EXP_DIR / name).exists() else PROMPT_DIR / name
+    text = path.read_text(encoding="utf-8")
     return _LEADING_HTML_COMMENT.sub("", text, count=1).strip()
 
 

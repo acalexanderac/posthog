@@ -3,7 +3,7 @@
 **Question:** on a PR that changes files meeting live production state, does Standard with a rollout-transition lens find deploy-time and existing-state failures that Standard alone misses, without adding noise or cost beyond a shipped lens?
 
 **Short answer:** no, not on the model this pilot ran on. The lens finds real rollout bugs on PRs it has never seen, but Standard alone found every one of them too.
-The lens is not wired into the review workflow and has no flag. This PR adds the prompt, the router, an unseen test set and this report.
+The lens is not wired into the review workflow and has no flag. The prompt ([`lens_rollout_transition.md`](./lens_rollout_transition.md)) and the router ([`rollout_routing.py`](./rollout_routing.py)) stay in this folder with the unseen test set.
 
 - On 29 unseen PRs that each shipped a rollout bug, the router sends 17 to the lens. The lens found the bug on 8 and 7 of them in two runs.
 - Standard alone (the main session and the two shipped lenses) found the bug on all 8 of the PRs where the lens found it. The lens added no catch of its own.
@@ -21,7 +21,7 @@ This is a local pilot on a different model than the product uses. See [Limits](#
   The fix for each bug is therefore not reachable from the session.
 - **Control** is the main session and the two shipped lenses. **Treatment** adds the rollout-transition lens session, which runs only when the router matches a changed file.
 - **Prompt.** Frozen at commit `4beee8a94` before the unseen set was mined. Nothing in this report was used to change the prompt or the router.
-- **Judging.** Each finding was matched by hand to the case's labeled bug with the rubric of [`2026-09-incident-golden-set/JUDGE_RUBRIC.md`](../2026-09-incident-golden-set/JUDGE_RUBRIC.md): hit, partial or miss.
+- **Judging.** The coding agent that ran the pilot (Claude Fable 5.2) matched each finding to the case's labeled bug with the rubric of [`2026-09-incident-golden-set/JUDGE_RUBRIC.md`](../2026-09-incident-golden-set/JUDGE_RUBRIC.md): hit, partial or miss.
   Opus 5.5 then judged the same findings without tools, pooled across arms in random order and without arm names. It gave the same number of hits in every arm and differed on four partial calls.
   This report counts hits only.
 - **Not simulated:** the product's dedup, publish threshold and finding cap. A finding counts when a session wrote it.
@@ -29,7 +29,7 @@ This is a local pilot on a different model than the product uses. See [Limits](#
 ## The unseen set
 
 29 PRs merged July to November 2026, each paired with the later PR that fixed the bug it introduced. [`PLAN.md`](./PLAN.md) has the funnel.
-In short: a small model read 8,517 fix PR descriptions, a stronger model checked the 267 it marked against the PRs that last touched the fixed lines, and each surviving case was read by hand against the fix and the introducing diff.
+In short: a small model read 8,517 fix PR descriptions, a stronger model checked the 267 it marked against the PRs that last touched the fixed lines, and the coding agent that ran the pilot read each surviving case against the fix description and the introducing diff, dropping 8 of 37.
 
 | Group                                | Cases | Sent to the lens by the router |
 | ------------------------------------ | ----- | ------------------------------ |
@@ -115,9 +115,9 @@ The control result on the unseen PRs is what that step was meant to detect.
 - **Not the production model or path.** Sessions ran through the Claude CLI and, for the second model, the Cursor agent CLI. The product's Standard arm uses a different model, and nothing ran through `manage.py run_review`. The golden-set report that motivated this lens measured the product's model.
 - **Control covers 8 of the 29 PRs**, once. The share of all 29 bugs that Standard finds is not known.
 - **The Grok control is partial.** The shipped lenses ran on one PR. On the other seven the comparison is with the main session alone.
-- **The labels come from fix PR descriptions.** A bug whose fix did not explain the cause is not in the set. Each case was read by one person.
+- **The labels come from fix PR descriptions.** A bug whose fix did not explain the cause is not in the set. An AI agent checked each case. No person has relabeled them.
 - **July and August were searched less.** Only fix PRs matching a keyword list were read there; September to November was read in full.
-- **The judge is one person and one model of the same family as the reviewer.**
+- **Both judges are models of the same family as the reviewer.** No person has scored the findings.
 - **No dedup, validity or severity judging**, so three bars are not measured.
 - **Small sets.** 17 routed PRs and two runs. Read a difference of one PR as noise.
 - **The safe PRs are safe by argument**, not by a later absence of incidents.

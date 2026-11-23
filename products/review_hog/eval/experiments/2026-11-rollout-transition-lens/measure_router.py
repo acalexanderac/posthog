@@ -2,55 +2,19 @@
 
 from __future__ import annotations
 
-import sys
 import json
 import subprocess
+import importlib.util
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[5]
-sys.path.insert(0, str(REPO_ROOT))
+EXP_DIR = Path(__file__).resolve().parent
+REPO_ROOT = EXP_DIR.parents[4]
 
-# Direct module load to avoid Django app initialization when running standalone.
-import importlib.util  # noqa: E402
-
-_spec = importlib.util.spec_from_file_location(
-    "rollout_routing",
-    REPO_ROOT / "products/review_hog/backend/reviewer/rollout_routing.py",
-)
+_spec = importlib.util.spec_from_file_location("rollout_routing", EXP_DIR / "rollout_routing.py")
 assert _spec and _spec.loader
-# Inject minimal stub for constants & PRFile only if Django/pydantic isn't in standalone python env.
-try:
-    _mod = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_mod)
-    rollout_transition_trigger_files = _mod.rollout_transition_trigger_files
-except Exception:
-    import types
-    from dataclasses import dataclass
-
-    @dataclass
-    class _PRFile:
-        filename: str
-        additions: int = 0
-        deletions: int = 0
-
-    for pkg in [
-        "products",
-        "products.review_hog",
-        "products.review_hog.backend",
-        "products.review_hog.backend.reviewer",
-        "products.review_hog.backend.reviewer.models",
-    ]:
-        sys.modules.setdefault(pkg, types.ModuleType(pkg))
-    c_mod = types.ModuleType("products.review_hog.backend.reviewer.constants")
-    c_mod.FLASH_LENS_CHUNK_MAX_LINES = 600  # type: ignore[attr-defined]
-    sys.modules["products.review_hog.backend.reviewer.constants"] = c_mod
-    gm_mod = types.ModuleType("products.review_hog.backend.reviewer.models.github_meta")
-    gm_mod.PRFile = _PRFile  # type: ignore[attr-defined]
-    sys.modules["products.review_hog.backend.reviewer.models.github_meta"] = gm_mod
-
-    _mod = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_mod)
-    rollout_transition_trigger_files = _mod.rollout_transition_trigger_files
+_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_mod)
+rollout_transition_trigger_files = _mod.rollout_transition_trigger_files
 
 
 def fetch_pr_files(pr_numbers: list[int]) -> dict[int, list[str]]:

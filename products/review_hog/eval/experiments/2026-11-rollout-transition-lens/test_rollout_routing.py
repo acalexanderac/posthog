@@ -1,15 +1,29 @@
+import importlib.util
+from dataclasses import dataclass
+from pathlib import Path
+
 import pytest
 
-from products.review_hog.backend.reviewer.models.github_meta import PRFile
-from products.review_hog.backend.reviewer.rollout_routing import (
-    is_rollout_trigger_path,
-    rollout_transition_scope_files,
-    rollout_transition_trigger_files,
-)
+# The experiment folder name is not a valid package name, so the module is loaded by path.
+_spec = importlib.util.spec_from_file_location("rollout_routing", Path(__file__).parent / "rollout_routing.py")
+assert _spec and _spec.loader
+_routing = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_routing)
+
+is_rollout_trigger_path = _routing.is_rollout_trigger_path
+rollout_transition_scope_files = _routing.rollout_transition_scope_files
+rollout_transition_trigger_files = _routing.rollout_transition_trigger_files
 
 
-def _file(filename: str, lines: int = 10) -> PRFile:
-    return PRFile(filename=filename, status="modified", additions=lines, deletions=0)
+@dataclass
+class _File:
+    filename: str
+    additions: int
+    deletions: int = 0
+
+
+def _file(filename: str, lines: int = 10) -> _File:
+    return _File(filename=filename, additions=lines)
 
 
 @pytest.mark.parametrize(

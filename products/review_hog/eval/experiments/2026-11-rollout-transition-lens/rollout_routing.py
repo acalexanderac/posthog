@@ -1,4 +1,6 @@
-"""Deterministic, repo-agnostic routing for the Standard rollout-transition lens.
+"""Deterministic, repo-agnostic routing for the Standard rollout-transition lens pilot.
+
+Pilot code: nothing in the product imports this module. See FINAL_REPORT.md.
 
 Decides whether a PR touches files where new code meets pre-existing production state
 (migrations, persisted models/schemas, durable workflows, scheduled jobs, backfill/migration
@@ -14,9 +16,18 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 from pathlib import PurePosixPath
+from typing import Protocol
 
-from products.review_hog.backend.reviewer.constants import FLASH_LENS_CHUNK_MAX_LINES
-from products.review_hog.backend.reviewer.models.github_meta import PRFile
+# Same value as FLASH_LENS_CHUNK_MAX_LINES in the product's reviewer constants, copied so this
+# pilot module imports nothing from the product.
+LENS_CHUNK_MAX_LINES = 600
+
+
+class ChangedFile(Protocol):
+    filename: str
+    additions: int
+    deletions: int
+
 
 # Non-code, test, generated, doc, and UI-only paths never trigger the rollout-transition lens.
 _EXCLUDED_DIR_PARTS = frozenset(
@@ -106,14 +117,14 @@ def _parent_dir(path: str) -> str:
     return str(PurePosixPath(path).parent)
 
 
-def _changed_lines(pr_file: PRFile) -> int:
+def _changed_lines(pr_file: ChangedFile) -> int:
     return pr_file.additions + pr_file.deletions
 
 
 def rollout_transition_scope_files(
-    pr_files: Sequence[PRFile],
+    pr_files: Sequence[ChangedFile],
     *,
-    max_lines: int = FLASH_LENS_CHUNK_MAX_LINES,
+    max_lines: int = LENS_CHUNK_MAX_LINES,
 ) -> tuple[list[str], list[str]]:
     """Return `(trigger_files, scope_files)` for a Standard rollout-transition lens session.
 
